@@ -8,15 +8,20 @@ def crossing_groups(bank_side) -> list[tuple[int, ...]]:
     return singles + pairs
 
 
-def next_states(state, everyone, times):
+def next_states(state, everyone, times) -> list[tuple[int, tuple[frozenset[int], int], tuple[str, tuple[int, ...]]]]:
     left, side = state
     bank_side = left if side == 0 else everyone - left
     arrow = "->" if side == 0 else "<-"
+    states = []
 
     for group in crossing_groups(bank_side):
         g = frozenset(group)
         new_left = left - g if side == 0 else left | g
-        yield max(times[p] for p in group), (new_left, 1 - side), (arrow, group)
+        states.append(
+            (max(times[p] for p in group), (new_left, 1 - side), (arrow, group))
+        )
+
+    return states
 
 
 def bridge_problem(minutes_to_cross) -> tuple[float, list]:
