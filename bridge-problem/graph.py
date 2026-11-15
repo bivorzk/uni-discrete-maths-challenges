@@ -26,19 +26,28 @@ State = tuple[frozenset[int], int]
 
 def build_graph(
     number_of_tourists: int, minutes_to_cross: list[int]
-) -> tuple[nx.DiGraph, State, State]:
+) -> tuple[nx.DiGraph, State, State] | None:
     """Felépíti az összes elérhető állapotot és átkelést tartalmazó gráfot.
 
     Az élek a ``weight`` attribútumban tartalmazzák az átkelés költségét,
     a ``move`` attribútumban pedig a megjeleníthető lépést, például
     ``("->", (1, 2))``.
     """
-    if number_of_tourists <= 0 or number_of_tourists > 10:
-        raise ValueError("Number of tourists must be between 1 and 10.")
+    if not isinstance(number_of_tourists, int) or not 1 <= number_of_tourists <= 10:
+        print("Number of tourists must be between 1 and 10.")
+        return None
+    if not isinstance(minutes_to_cross, list):
+        print("Crossing times must be provided as a list.")
+        return None
     if len(minutes_to_cross) != number_of_tourists:
-        raise ValueError("The number of crossing times must match the tourists.")
-    if any(minutes <= 0 for minutes in minutes_to_cross):
-        raise ValueError("Minutes must be positive integers.")
+        print("The number of crossing times must match the tourists.")
+        return None
+    if any(
+        not isinstance(minutes, int) or minutes <= 0
+        for minutes in minutes_to_cross
+    ):
+        print("Minutes must be positive integers.")
+        return None
 
     everyone = frozenset(range(1, number_of_tourists + 1))
     start: State = (everyone, 0)
@@ -63,9 +72,12 @@ def build_graph(
 
 def shortest_solution(
     number_of_tourists: int, minutes_to_cross: list[int]
-) -> tuple[int, list[tuple[str, tuple[int, ...]]]]:
+) -> tuple[float, list[tuple[str, tuple[int, ...]]]]:
     """Visszaadja a leggyorsabb megoldás összidejét és lépéseit."""
-    graph, start, target = build_graph(number_of_tourists, minutes_to_cross)
+    graph_data = build_graph(number_of_tourists, minutes_to_cross)
+    if graph_data is None:
+        return float("inf"), []
+    graph, start, target = graph_data
     path = nx.shortest_path(graph, start, target, weight="weight")
     total_time = nx.path_weight(graph, path, weight="weight")
     moves = [
@@ -118,7 +130,10 @@ def draw_solution(
     """Kirajzolja az állapotgráfot, a leggyorsabb utat kiemelve."""
     import matplotlib.pyplot as plt
 
-    graph, start, target = build_graph(number_of_tourists, minutes_to_cross)
+    graph_data = build_graph(number_of_tourists, minutes_to_cross)
+    if graph_data is None:
+        return
+    graph, start, target = graph_data
     path = nx.shortest_path(graph, start, target, weight="weight")
     path_edges = set(zip(path, path[1:]))
     positions = nx.spring_layout(graph, seed=42)

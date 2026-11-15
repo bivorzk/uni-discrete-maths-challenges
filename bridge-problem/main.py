@@ -1,89 +1,89 @@
 import heapq
-
-def get_bank(left, side, everyone):
-    """Az a part, ahol a lámpa van (csak onnan indulhat átkelés)."""
-    return left if side == 0 else everyone - left
+from itertools import count
 
 
-def crossing_groups(bank):
-    """Minden lehetséges csoport: 1 vagy 2 ember a lámpás parton."""
-    singles = [(a,) for a in bank]
-    pairs = [(a, b) for a in bank for b in bank if a < b]
+def crossing_groups(bank_side) -> list[tuple[int, ...]]:
+    singles = [(a,) for a in bank_side]
+    pairs = [(a, b) for a in bank_side for b in bank_side if a < b]
     return singles + pairs
 
 
-def crossing_time(group, times):
-    """Az átkelés ideje a leglassabb csoporttag ideje."""
-    return max(times[p] for p in group)
-
-
-def apply_move(left, side, group):
-    """Az új bal part: balra->jobbra kikerülnek, jobbra->balra visszakerülnek."""
-    g = frozenset(group)
-    return left - g if side == 0 else left | g
-
-
 def next_states(state, everyone, times):
-    """Az állapotból elérhető (költség, új állapot, lépés) hármasok."""
     left, side = state
+    bank_side = left if side == 0 else everyone - left
     arrow = "->" if side == 0 else "<-"
-    for group in crossing_groups(get_bank(left, side, everyone)):
-        new_state = (apply_move(left, side, group), 1 - side)
-        yield crossing_time(group, times), new_state, (arrow, group)
+
+    for group in crossing_groups(bank_side):
+        g = frozenset(group)
+        new_left = left - g if side == 0 else left | g
+        yield max(times[p] for p in group), (new_left, 1 - side), (arrow, group)
 
 
-def bridge_problem(number_of_tourists, minutes_to_cross):
-    times = {i + 1: minutes_to_cross[i] for i in range(number_of_tourists)}
+def bridge_problem(minutes_to_cross) -> tuple[float, list]:
+    times = {i + 1: m for i, m in enumerate(minutes_to_cross)}
     everyone = frozenset(times)
-    start = (everyone, 0)  # mindenki balra, a lámpa is balra
 
-    pq = [(0, start, [])]
+    tie = count()
+    priority_queue = [(0, next(tie), (everyone, 0), None)]
     seen = set()
 
-    while pq:
-        cost, state, moves = heapq.heappop(pq)
+    while priority_queue:
+        cost, _, state, path = heapq.heappop(priority_queue)
         left, _ = state
 
         if not left:
-            return cost, moves
+            moves = []
+            while path:
+                move, path = path
+                moves.append(move)
+            return cost, moves[::-1]
+
         if state in seen:
             continue
         seen.add(state)
 
         for step_cost, new_state, move in next_states(state, everyone, times):
-            heapq.heappush(pq, (cost + step_cost, new_state, moves + [move]))
+            heapq.heappush(priority_queue, (cost + step_cost, next(tie), new_state, (move, path)))
 
+    print("No solution found.")
     return float("inf"), []
 
-def number_of_tourists(nums):
-    if nums <= 0 or nums > 10:
-        raise ValueError("Number of tourists must be between 1 and 10.")
-    return nums
 
-def minutes_to_cross(nums):
-    # Validate the tourist count first
-    num_tourists = number_of_tourists(nums)
-    
-    tourist_minutes = []
-    
-    # Collect minutes for each tourist inside this function
-    for i in range(1, num_tourists + 1):
-        mins = int(input(f"Enter minutes to cross for tourist {i}: "))
-        if mins <= 0:
-            raise ValueError("Minutes must be a positive integer.")
-        tourist_minutes.append(mins)
-        
-    return tourist_minutes
+def read_minutes(n: int) -> list[int]:
+    minutes = []
+    for i in range(1, n + 1):
+        while True:
+            try:
+                m = int(input(f"Enter minutes to cross for tourist {i}: "))
+            except ValueError:
+                print("Please enter a positive integer.")
+                continue
+            if m <= 0:
+                print("Minutes must be a positive integer.")
+                continue
+            minutes.append(m)
+            break
+    return minutes
 
-def main():
-    nums = int(input("Enter the number of tourists (1-10): "))
-    while nums <= 0 or nums > 10:
-        nums = int(input("Number of tourists must be between 1 and 10. Please enter again: "))
-    
-    times = minutes_to_cross(nums)
-    
-    print("Minutes for all tourists:", times)
-    print("Shortest time to cross the bridge:", bridge_problem(nums, times)[0])
+
+def main() -> None:
+    while True:
+        try:
+            n = int(input("Enter the number of tourists (1-10): "))
+        except ValueError:
+            print("Please enter an integer between 1 and 10.")
+            continue
+        if 1 <= n <= 10:
+            break
+        print("Number of tourists must be between 1 and 10. Please enter again.")
+
+    minutes = read_minutes(n)
+    total, moves = bridge_problem(minutes)
+
+    print("Minutes for all tourists:", minutes)
+    print("Moves to cross the bridge:", moves)
+    print("Shortest time to cross the bridge:", total)
+
 
 if __name__ == "__main__":
     main()
