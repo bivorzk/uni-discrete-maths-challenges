@@ -8,6 +8,9 @@
 - Az összes átkelési idő legyen minimális.
 - Egyszerre legfeljebb két ember kelhet át.
 
+
+https://en.wikipedia.org/wiki/Bridge_and_torch_problem+
+
 > „A legjobb kap valamit.”
 
 **Határidő:** hétfő, 10:10–11:40 (két hét múlva)
